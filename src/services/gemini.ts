@@ -14,7 +14,8 @@ export async function generateProjectFromPrompt(
       return null;
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    // Updated API URL to use the correct endpoint
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
     
     const enhancedPrompt = `
     You are an expert software architect and developer. I need you to generate a complete software project based on the following description:
@@ -72,6 +73,7 @@ export async function generateProjectFromPrompt(
       }
     };
 
+    console.log("Sending request to Gemini API:", url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -82,10 +84,12 @@ export async function generateProjectFromPrompt(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Gemini API error response:", errorText);
       throw new Error(`Gemini API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("Received response from Gemini API:", data);
     
     if (!data.candidates || data.candidates.length === 0) {
       throw new Error("No response from Gemini API");
