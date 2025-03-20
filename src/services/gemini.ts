@@ -1,8 +1,7 @@
 
 import { AppRequirements, GeminiResponse, ProjectStructure } from "@/lib/types";
 import { toast } from "sonner";
-
-const API_KEY = ""; // We'll use a form field for the API key since it's a free service
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 export async function generateProjectFromPrompt(
   prompt: string,
@@ -14,9 +13,21 @@ export async function generateProjectFromPrompt(
       return null;
     }
 
-    // Updated API URL to use the correct endpoint
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
-    
+    console.log("Initializing Google Generative AI with provided API key");
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    // Using a more recent model that's known to work
+    const model = genAI.getGenerativeModel({
+      model: "gemini-pro",
+    });
+
+    const generationConfig = {
+      temperature: 0.2,
+      topP: 0.8,
+      topK: 40,
+      maxOutputTokens: 8192,
+    };
+
     const enhancedPrompt = `
     You are an expert software architect and developer. I need you to generate a complete software project based on the following description:
     
@@ -55,57 +66,23 @@ export async function generateProjectFromPrompt(
     Focus on creating a well-structured and maintainable codebase. Only include essential files needed to demonstrate the core functionality. Provide detailed code for each file, following best practices for the chosen technologies.
     `;
     
-    const payload = {
-      contents: [
-        {
-          parts: [
-            {
-              text: enhancedPrompt
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 8192,
-        topP: 0.8,
-        topK: 40
-      }
-    };
-
-    console.log("Sending request to Gemini API:", url);
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
+    console.log("Sending request to Gemini API");
+    
+    // Create a chat session
+    const chatSession = model.startChat({
+      generationConfig,
+      history: [],
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error response:", errorText);
-      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log("Received response from Gemini API:", data);
     
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error("No response from Gemini API");
-    }
-
-    const content = data.candidates[0].content;
+    // Send the message
+    const result = await chatSession.sendMessage(enhancedPrompt);
+    const responseText = result.response.text();
     
-    if (!content || !content.parts || content.parts.length === 0) {
-      throw new Error("Invalid response structure from Gemini API");
-    }
-
-    const text = content.parts[0].text;
+    console.log("Received response from Gemini API");
     
     // Extract JSON from the response
     const jsonRegex = /{[\s\S]*}/g;
-    const jsonMatch = text.match(jsonRegex);
+    const jsonMatch = responseText.match(jsonRegex);
     
     if (!jsonMatch) {
       throw new Error("Could not extract JSON from the response");
