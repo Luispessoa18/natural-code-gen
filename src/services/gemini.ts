@@ -16,16 +16,17 @@ export async function generateProjectFromPrompt(
     console.log("Initializing Google Generative AI with provided API key");
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Using a more recent model that's known to work
+    // Usando o modelo mais recente compartilhado pelo usuário
     const model = genAI.getGenerativeModel({
-      model: "gemini-pro",
+      model: "gemini-2.0-pro-exp-02-05",
     });
 
     const generationConfig = {
-      temperature: 0.2,
-      topP: 0.8,
-      topK: 40,
+      temperature: 1,
+      topP: 0.95,
+      topK: 64,
       maxOutputTokens: 8192,
+      responseMimeType: "text/plain",
     };
 
     const enhancedPrompt = `
@@ -66,7 +67,7 @@ export async function generateProjectFromPrompt(
     Focus on creating a well-structured and maintainable codebase. Only include essential files needed to demonstrate the core functionality. Provide detailed code for each file, following best practices for the chosen technologies.
     `;
     
-    console.log("Sending request to Gemini API");
+    console.log("Sending request to Gemini API with model: gemini-2.0-pro-exp-02-05");
     
     // Create a chat session
     const chatSession = model.startChat({
